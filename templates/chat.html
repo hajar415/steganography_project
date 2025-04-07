@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Chat Sécurisé</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f4;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        #messages {
+            border: 1px solid #ccc;
+            height: 500px;
+            overflow-y: scroll;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .message {
+            padding: 12px;
+            margin: 8px 0;
+            max-width: 70%;
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        .sent {
+            background-color: #007bff;
+            color: white;
+            border-radius: 18px 18px 0 18px;
+            margin-left: auto;
+        }
+
+        .received {
+            background-color: #e0e0e0;
+            border-radius: 18px 18px 18px 0;
+            margin-right: auto;
+        }
+
+        #message-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #message-input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .normal-image {
+            max-width: 200px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .normal-image:hover {
+            transform: scale(1.02);
+        }
+
+        .file-input-container {
+            position: relative;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        #image-input {
+            display: none;
+        }
+
+        .file-icon {
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+
+        .file-preview {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px dashed #ccc;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .message-time {
+            font-size: 0.7em;
+            color: #666;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        .confirmation {
+            font-size: 0.8em;
+            color: #4CAF50;
+            margin-top: 3px;
+        }
+
+        .required-image {
+            border: 2px solid red;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                border-color: red;
+            }
+
+            50% {
+                border-color: #ff6666;
+            }
+
+            100% {
+                border-color: red;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h2>💬 Chat Sécurisé</h2>
+    <div id="messages"></div>
+    <div id="message-form">
+        <div class="file-input-container">
+            <label for="image-input" class="file-icon" id="image-label">🖼️</label>
+            <input type="file" id="image-input" accept="image/*" required>
+        </div>
+        <div class="file-input-container">
+            <label for="file-input" class="file-icon">📎</label>
+            <input type="file" id="file-input">
+        </div>
+        <input type="text" id="message-input" placeholder="Votre message..." autocomplete="off">
+        <button id="send-button">Envoyer</button>
+    </div>
+    <div id="file-preview" class="file-preview"></div>
+
+    <script>
+        const socket = io();
+        const myID = Math.random().toString(36).substr(2, 9);
+        const messagesDiv = document.getElementById('messages');
+        const fileInput = document.getElementById('file-input');
+        const imageInput = document.getElementById('image-input');
+        const imageLabel = document.getElementById('image-label');
+        const filePreview = document.getElementById('file-preview');
+        let currentFile = null;
+        let currentImage = null;
+
+        // Marquer visuellement que l'image est obligatoire
+        imageLabel.classList.add('required-image');
+
+        fileInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            currentFile = file;
+            filePreview.style.display = 'block';
+
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    filePreview.innerHTML = `
+                        <img src="${e.target.result}" class="normal-image">
+                    `;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                filePreview.innerHTML = `
+                    <div>Prêt à envoyer: ${file.name}</div>
+                `;
+            }
+        });
+
+        imageInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                currentImage = file;
+                imageLabel.classList.remove('required-image');
+                imageLabel.title = "Image sélectionnée: " + file.name;
+            } else {
+                currentImage = null;
+                imageLabel.classList.add('required-image');
+                imageLabel.title = "";
+            }
+        });
+
+        document.getElementById('send-button').addEventListener('click', sendMessage);
+        document.getElementById('message-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        function sendMessage() {
+            // Vérifier qu'une image a été sélectionnée
+            if (!currentImage) {
+                alert("Vous devez sélectionner une image (icône 🖼️) pour cacher votre message !");
+                imageLabel.classList.add('required-image');
+                imageLabel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            const input = document.getElementById('message-input');
+
+            if (currentFile) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const fileData = e.target.result.split(',')[1];
+                    const passphrase = prompt("Entrez une passphrase pour ce fichier:");
+                    if (!passphrase) return;
+
+                    // Utiliser l'image sélectionnée
+                    const imgReader = new FileReader();
+                    imgReader.onload = function (imgEvent) {
+                        const imageData = imgEvent.target.result.split(',')[1];
+                        socket.emit('send_message', {
+                            is_file: true,
+                            file_data: fileData,
+                            filename: currentFile.name,
+                            filetype: currentFile.type,
+                            sender: myID,
+                            passphrase: passphrase,
+                            cover_image: imageData
+                        });
+                        showSentConfirmation();
+                        resetForm();
+                    };
+                    imgReader.readAsDataURL(currentImage);
+                };
+                reader.readAsDataURL(currentFile);
+            } else {
+                const message = input.value.trim();
+                if (!message) {
+                    alert("Veuillez entrer un message !");
+                    return;
+                }
+
+                const passphrase = prompt("Entrez une passphrase pour ce message:");
+                if (!passphrase) return;
+
+                // Utiliser l'image sélectionnée
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const imageData = e.target.result.split(',')[1];
+                    socket.emit('send_message', {
+                        message: message,
+                        sender: myID,
+                        passphrase: passphrase,
+                        cover_image: imageData
+                    });
+                    showSentConfirmation();
+                    resetForm();
+                };
+                reader.readAsDataURL(currentImage);
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('message-input').value = '';
+            currentFile = null;
+            currentImage = null;
+            fileInput.value = '';
+            imageInput.value = '';
+            filePreview.style.display = 'none';
+            filePreview.innerHTML = '';
+            imageLabel.classList.add('required-image');
+            imageLabel.title = "";
+        }
+
+        function showSentConfirmation() {
+            const div = document.createElement('div');
+            div.className = 'message sent';
+            div.innerHTML = `
+                <div>Message envoyé</div>
+                <div class="confirmation">✓</div>
+                <div class="message-time">${new Date().toLocaleTimeString()}</div>
+            `;
+            messagesDiv.appendChild(div);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        socket.on('receive_message', function (data) {
+            if (data.sender === myID) return;
+
+            const div = document.createElement('div');
+            div.className = 'message received';
+
+            if (data.is_file) {
+                div.innerHTML = `
+                    <img src="data:image/png;base64,${data.image}" class="normal-image">
+                    <div class="message-time">${new Date(data.timestamp).toLocaleTimeString()}</div>
+                `;
+
+                div.querySelector('img').onclick = function () {
+                    decryptAndDownloadFile(data.image, data.message_id, data.filename, data.filetype, div);
+                };
+            } else {
+                div.innerHTML = `
+                    <img src="data:image/png;base64,${data.image}" class="normal-image">
+                    <div class="message-time">${new Date(data.timestamp).toLocaleTimeString()}</div>
+                `;
+
+                div.querySelector('img').onclick = function () {
+                    decryptMessage(data.image, data.message_id, div);
+                };
+            }
+
+            messagesDiv.appendChild(div);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+
+        socket.on('message_sent', function (data) {
+            // Cette fonction peut être utilisée pour des confirmations supplémentaires
+        });
+
+        function decryptMessage(imageData, messageId, parentDiv) {
+            const passphrase = prompt("Entrez la passphrase secrète:");
+            if (!passphrase) return;
+
+            fetch('/decrypt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image: "data:image/png;base64," + imageData,
+                    message_id: messageId,
+                    passphrase: passphrase
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const contentDiv = document.createElement('div');
+                        contentDiv.style.marginTop = '8px';
+                        contentDiv.textContent = data.message;
+                        parentDiv.appendChild(contentDiv);
+                    } else {
+                        alert("Erreur: " + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert("Erreur de déchiffrement");
+                    console.error(error);
+                });
+        }
+
+        function decryptAndDownloadFile(imageData, messageId, filename, filetype, parentDiv) {
+            const passphrase = prompt(`Entrez la passphrase pour ${filename}:`);
+            if (!passphrase) return;
+
+            fetch('/decrypt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image: "data:image/png;base64," + imageData,
+                    message_id: messageId,
+                    passphrase: passphrase,
+                    is_file: true,
+                    filename: filename,
+                    filetype: filetype
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const link = document.createElement('a');
+                        link.href = `data:${data.filetype};base64,${data.file_data}`;
+                        link.download = data.filename;
+                        link.click();
+                    } else {
+                        alert("Erreur: " + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert("Erreur de déchiffrement");
+                    console.error(error);
+                });
+        }
+    </script>
+</body>
+
+</html>
