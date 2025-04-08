@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steganography Project | Secure</title>
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --dark-bg: #1A1D26;
+            --card-bg: #252A38;
+            --text: #E0E5EC;
+            --highlight: #FF6B6B;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            background: var(--dark-bg);
+        }
+
+        /* Header Section */
+        .header {
+            background:
+                linear-gradient(rgba(26, 29, 38, 0.9), rgba(26, 29, 38, 0.9)),
+                url('https://b2281239.smushcdn.com/2281239/wp-content/uploads/2021/04/Untitled-design-48.png?lossy=1&strip=1&webp=1') no-repeat center;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .header-content {
+            max-width: 800px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(90deg, var(--primary), var(--highlight));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 700;
+        }
+
+        .tagline {
+            color: rgba(224, 229, 236, 0.8);
+            font-size: 1.3rem;
+            margin-bottom: 3rem;
+            line-height: 1.6;
+        }
+
+        /* Security Animations Section */
+        .security-animations {
+            padding: 6rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .animation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 3rem;
+            margin-top: 4rem;
+        }
+
+        .animation-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+            text-decoration: none;
+            display: block;
+            color: inherit;
+        }
+
+        .animation-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .animation-container {
+            width: 100%;
+            height: 250px;
+            background: #1E2230;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .animation-description {
+            padding: 2rem;
+        }
+
+        .animation-title {
+            color: var(--primary);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .animation-desc {
+            color: rgba(224, 229, 236, 0.7);
+            line-height: 1.6;
+        }
+
+        /* Custom Animations (EXISTANTES - NON MODIFIEES) */
+        .encryption-anim {
+            width: 80%;
+            height: 80%;
+            background: conic-gradient(from 0deg,
+                    var(--primary) 0%,
+                    #00B4D8 25%,
+                    #00F5D4 50%,
+                    #00B4D8 75%,
+                    var(--primary) 100%);
+            border-radius: 50%;
+            position: relative;
+            animation: spin 4s linear infinite;
+            box-shadow: 0 0 30px rgba(74, 144, 226, 0.6);
+        }
+
+        .encryption-anim::before {
+            content: "";
+            position: absolute;
+            inset: 10%;
+            background: var(--card-bg);
+            border-radius: 50%;
+        }
+
+        .encryption-anim::after {
+            content: "🖼️";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+        }
+
+        .audio-anim {
+            width: 90%;
+            height: 80%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sound-bar {
+            width: 8px;
+            background: var(--primary);
+            border-radius: 4px;
+            animation: soundWave 1.5s infinite ease-in-out;
+        }
+
+        @keyframes soundWave {
+
+            0%,
+            100% {
+                height: 20%;
+            }
+
+            50% {
+                height: 100%;
+            }
+        }
+
+        .scan-anim {
+            width: 90%;
+            height: 80%;
+            background: linear-gradient(to bottom,
+                    transparent,
+                    rgba(74, 144, 226, 0.2) 20%,
+                    rgba(74, 144, 226, 0.7) 50%,
+                    rgba(74, 144, 226, 0.2) 80%,
+                    transparent);
+            position: relative;
+            animation: scan 3s ease-in-out infinite;
+        }
+
+        @keyframes scan {
+
+            0%,
+            100% {
+                top: 0;
+                opacity: 0.7;
+            }
+
+            50% {
+                top: 100%;
+                opacity: 1;
+            }
+        }
+
+        .shield-anim {
+            width: 120px;
+            height: 120px;
+            position: relative;
+        }
+
+        .shield {
+            font-size: 5rem;
+            color: var(--primary);
+            position: relative;
+            z-index: 2;
+            text-shadow: 0 0 20px rgba(74, 144, 226, 0.8);
+        }
+
+        .pulse {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(74, 144, 226, 0.3);
+            border-radius: 50%;
+            animation: pulse 2s ease-out infinite;
+            top: 0;
+            left: 0;
+        }
+
+        .pulse:nth-child(2) {
+            animation-delay: 0.5s;
+        }
+
+        .pulse:nth-child(3) {
+            animation-delay: 1s;
+        }
+
+        @keyframes pulse {
+            100% {
+                transform: scale(1.8);
+                opacity: 0;
+            }
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* NOUVELLE ANIMATION UNIQUEMENT POUR LE CHAT */
+        .chat-anim {
+            width: 80%;
+            height: 80%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .chat-bubble {
+            background: var(--primary);
+            border-radius: 18px;
+            padding: 10px 15px;
+            max-width: 70%;
+            position: relative;
+            animation: bubbleFloat 3s infinite ease-in-out;
+        }
+
+        .chat-bubble:nth-child(1) {
+            align-self: flex-start;
+            animation-delay: 0s;
+        }
+
+        .chat-bubble:nth-child(2) {
+            align-self: flex-end;
+            animation-delay: 0.5s;
+            background: var(--highlight);
+        }
+
+        .chat-bubble:nth-child(3) {
+            align-self: flex-start;
+            animation-delay: 1s;
+        }
+
+        @keyframes bubbleFloat {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* NOUVELLE ANIMATION POUR HONEYFILES */
+        .honey-anim {
+            width: 80%;
+            height: 80%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .honeypot {
+            width: 100px;
+            height: 80px;
+            background: linear-gradient(to bottom, transparent, #FFC107);
+            border-radius: 0 0 50px 50px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(255, 193, 7, 0.3);
+        }
+
+        .honeypot::before {
+            content: "🪤";
+            position: absolute;
+            font-size: 2.5rem;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .honeypot::after {
+            content: "";
+            position: absolute;
+            width: 120%;
+            height: 20px;
+            background: #FFA000;
+            bottom: 0;
+            left: -10%;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255, 160, 0, 0.7);
+        }
+
+        .honey-drop {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: rgba(255, 193, 7, 0.8);
+            border-radius: 50% 50% 0 50%;
+            transform: rotate(45deg);
+            animation: honeyDrip 2.5s infinite ease-in-out;
+        }
+
+        .honey-drop:nth-child(1) {
+            left: 30%;
+            animation-delay: 0s;
+        }
+
+        .honey-drop:nth-child(2) {
+            left: 50%;
+            animation-delay: 0.8s;
+        }
+
+        .honey-drop:nth-child(3) {
+            left: 70%;
+            animation-delay: 1.6s;
+        }
+
+        @keyframes honeyDrip {
+            0% {
+                top: 0;
+                opacity: 0;
+            }
+
+            20% {
+                opacity: 1;
+            }
+
+            100% {
+                top: 150px;
+                opacity: 0;
+            }
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: rgba(224, 229, 236, 0.5);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header Section -->
+    <section class="header">
+        <div class="header-content">
+            <h1>Steganography Project</h1>
+            <p class="tagline">Secure data encryption and concealment</p>
+        </div>
+    </section>
+
+    <!-- Security Animations Section -->
+    <section class="security-animations">
+        <div class="animation-grid">
+            <!-- Animation 1: Image Steganography (EXISTANT) -->
+            <a href="#" class="animation-card">
+                <div class="animation-container">
+                    <div class="encryption-anim"></div>
+                </div>
+                <div class="animation-description">
+                    <h3 class="animation-title">🖼️ Image Steganography</h3>
+                    <p class="animation-desc">Hide messages within images without visible alteration.</p>
+                </div>
+            </a>
+
+            <!-- Animation 2: Audio Steganography (EXISTANT) -->
+            <a href="#" class="animation-card">
+                <div class="animation-container">
+                    <div class="audio-anim">
+                        <div class="sound-bar" style="animation-delay: 0s"></div>
+                        <div class="sound-bar" style="animation-delay: 0.1s"></div>
+                        <div class="sound-bar" style="animation-delay: 0.2s"></div>
+                        <div class="sound-bar" style="animation-delay: 0.3s"></div>
+                        <div class="sound-bar" style="animation-delay: 0.4s"></div>
+                        <div class="sound-bar" style="animation-delay: 0.5s"></div>
+                        <div class="sound-bar" style="animation-delay: 0.6s"></div>
+                    </div>
+                </div>
+                <div class="animation-description">
+                    <h3 class="animation-title">🎵 Audio Steganography</h3>
+                    <p class="animation-desc">Conceal data within audio files.</p>
+                </div>
+            </a>
+
+            <!-- Animation 3: PDF Steganography (EXISTANT) -->
+            <a href="#" class="animation-card">
+                <div class="animation-container">
+                    <div class="shield-anim">
+                        <div class="pulse"></div>
+                        <div class="pulse"></div>
+                        <div class="pulse"></div>
+                        <div class="shield">📄</div>
+                    </div>
+                </div>
+                <div class="animation-description">
+                    <h3 class="animation-title">📄 PDF Steganography</h3>
+                    <p class="animation-desc">Advanced methods for documents.</p>
+                </div>
+            </a>
+
+            <!-- Animation 4: Detection (EXISTANT) -->
+            <a href="#" class="animation-card">
+                <div class="animation-container">
+                    <div class="scan-anim"></div>
+                </div>
+                <div class="animation-description">
+                    <h3 class="animation-title">🔍 Detection & Steganalysis</h3>
+                    <p class="animation-desc">Tools to identify hidden data.</p>
+                </div>
+            </a>
+
+            <!-- NOUVELLE ANIMATION : Honeyfiles -->
+            <a href="honeyfiles.html" class="animation-card">
+                <div class="animation-container">
+                    <div class="honey-anim">
+                        <div class="honey-drop"></div>
+                        <div class="honey-drop"></div>
+                        <div class="honey-drop"></div>
+                        <div class="honeypot"></div>
+                    </div>
+                </div>
+                <div class="animation-description">
+                    <h3 class="animation-title">🍯 Honeyfiles</h3>
+                    <p class="animation-desc">Trap files to detect unauthorized access.</p>
+                </div>
+            </a>
+
+            <!-- NOUVELLE ANIMATION SEULEMENT : Secure Chat -->
+            <a href="secure-chat.html" class="animation-card">
+                <div class="animation-container">
+                    <div class="chat-anim">
+                        <div class="chat-bubble">Hello!</div>
+                        <div class="chat-bubble">🔒 Message encrypted</div>
+                        <div class="chat-bubble">Ready for steganography</div>
+                    </div>
+                </div>
+                <div class="animation-description">
+                    <h3 class="animation-title">💬 Secure Chat</h3>
+                    <p class="animation-desc">End-to-end encrypted communications</p>
+                </div>
+            </a>
+        </div>
+    </section>
+
+    <div class="footer">
+        Secure system • Inspired by Keybase • v1.0
+    </div>
+</body>
+
+</html>
