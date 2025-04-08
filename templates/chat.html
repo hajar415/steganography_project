@@ -1,399 +1,490 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 
 <head>
-    <title>Chat Sécurisé</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StegaChat - Messagerie Sécurisée</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            background-color: #f4f4f4;
-            max-width: 800px;
-            margin: 0 auto;
+        .animate-pulse-border {
+            animation: pulse-border 2s infinite;
         }
 
-        #messages {
-            border: 1px solid #ccc;
-            height: 500px;
-            overflow-y: scroll;
-            padding: 10px;
-            background: white;
-            border-radius: 5px;
-            margin-bottom: 10px;
-        }
-
-        .message {
-            padding: 12px;
-            margin: 8px 0;
-            max-width: 70%;
-            word-wrap: break-word;
-            position: relative;
-        }
-
-        .sent {
-            background-color: #007bff;
-            color: white;
-            border-radius: 18px 18px 0 18px;
-            margin-left: auto;
-        }
-
-        .received {
-            background-color: #e0e0e0;
-            border-radius: 18px 18px 18px 0;
-            margin-right: auto;
-        }
-
-        #message-form {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        #message-input {
-            flex: 1;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .normal-image {
-            max-width: 200px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .normal-image:hover {
-            transform: scale(1.02);
-        }
-
-        .file-input-container {
-            position: relative;
-            display: inline-block;
-            margin-right: 10px;
-        }
-
-        #file-input {
-            display: none;
-        }
-
-        #image-input {
-            display: none;
-        }
-
-        .file-icon {
-            font-size: 24px;
-            cursor: pointer;
-            padding: 5px 10px;
-        }
-
-        .file-preview {
-            margin-top: 10px;
-            padding: 10px;
-            border: 1px dashed #ccc;
-            border-radius: 5px;
-            display: none;
-        }
-
-        .message-time {
-            font-size: 0.7em;
-            color: #666;
-            margin-top: 5px;
-            text-align: right;
-        }
-
-        .confirmation {
-            font-size: 0.8em;
-            color: #4CAF50;
-            margin-top: 3px;
-        }
-
-        .required-image {
-            border: 2px solid red;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
+        @keyframes pulse-border {
             0% {
-                border-color: red;
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
             }
 
-            50% {
-                border-color: #ff6666;
+            70% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
             }
 
             100% {
-                border-color: red;
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
             }
+        }
+
+        .notification-fade {
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .passphrase-input {
+            letter-spacing: 0.2em;
+            font-family: monospace;
         }
     </style>
 </head>
 
-<body>
-    <h2>💬 Chat Sécurisé</h2>
-    <div id="messages"></div>
-    <div id="message-form">
-        <div class="file-input-container">
-            <label for="image-input" class="file-icon" id="image-label">🖼️</label>
-            <input type="file" id="image-input" accept="image/*" required>
-        </div>
-        <div class="file-input-container">
-            <label for="file-input" class="file-icon">📎</label>
-            <input type="file" id="file-input">
-        </div>
-        <input type="text" id="message-input" placeholder="Votre message..." autocomplete="off">
-        <button id="send-button">Envoyer</button>
-    </div>
-    <div id="file-preview" class="file-preview"></div>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto p-4 max-w-4xl">
+        <header class="bg-white shadow-sm rounded-lg p-4 mb-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-indigo-700 flex items-center">
+                    <i class="fas fa-lock mr-2"></i> StegaChat
+                </h1>
+                <p class="text-gray-600">Messages chiffrés et cachés dans des images</p>
+            </div>
+            <div id="user-alias" class="bg-indigo-100 px-3 py-1 rounded-full text-indigo-800 font-medium"></div>
+        </header>
 
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div id="messages" class="h-[500px] p-4 overflow-y-auto space-y-3 bg-gray-50"></div>
+
+            <div class="p-4 border-t border-gray-200 bg-white">
+                <div id="file-preview" class="hidden mb-3 p-3 bg-blue-50 rounded-lg"></div>
+                <div id="image-preview-container" class="hidden mb-3">
+                    <div class="flex items-center justify-between bg-green-50 p-2 rounded-lg">
+                        <span class="text-sm text-green-800">
+                            <i class="fas fa-check-circle mr-1"></i> Image sélectionnée
+                        </span>
+                        <button id="remove-image" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <label id="image-label"
+                        class="animate-pulse-border bg-white p-3 rounded-lg cursor-pointer hover:bg-gray-50 border-2 border-red-400">
+                        <i class="fas fa-image text-red-500"></i>
+                        <input type="file" id="image-input" accept="image/*" class="hidden" required>
+                    </label>
+
+                    <label class="bg-white p-3 rounded-lg cursor-pointer hover:bg-gray-50 border border-gray-300">
+                        <i class="fas fa-paperclip text-gray-600"></i>
+                        <input type="file" id="file-input" class="hidden">
+                    </label>
+
+                    <input id="message-input" type="text" placeholder="Écrivez un message..."
+                        class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+
+                    <button id="send-button"
+                        class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
+                        disabled>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour la passphrase -->
+    <div id="passphrase-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 w-96">
+            <h3 id="passphrase-title" class="text-lg font-bold mb-4">Entrez la passphrase</h3>
+            <p id="passphrase-hint" class="text-sm text-gray-500 mb-2">(minimum 8 caractères)</p>
+            <input id="passphrase-input" type="password" class="w-full p-2 border rounded passphrase-input mb-2"
+                placeholder="********">
+            <input id="passphrase-confirm" type="password"
+                class="w-full p-2 border rounded passphrase-input mb-4 hidden" placeholder="Confirmez la passphrase">
+            <div class="flex justify-end space-x-2">
+                <button id="passphrase-cancel" class="px-4 py-2 bg-gray-200 rounded">Annuler</button>
+                <button id="passphrase-submit" class="px-4 py-2 bg-indigo-600 text-white rounded">OK</button>
+            </div>
+            <p id="passphrase-error" class="text-red-500 text-sm mt-2 hidden"></p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
     <script>
         const socket = io();
-        const myID = Math.random().toString(36).substr(2, 9);
-        const messagesDiv = document.getElementById('messages');
-        const fileInput = document.getElementById('file-input');
-        const imageInput = document.getElementById('image-input');
-        const imageLabel = document.getElementById('image-label');
-        const filePreview = document.getElementById('file-preview');
         let currentFile = null;
         let currentImage = null;
+        let decryptAttempts = {};
+        const MAX_ATTEMPTS = 3;
 
-        // Marquer visuellement que l'image est obligatoire
-        imageLabel.classList.add('required-image');
+        // Gestion de l'interface
+        document.getElementById('file-input').addEventListener('change', handleFileSelect);
+        document.getElementById('image-input').addEventListener('change', handleImageSelect);
+        document.getElementById('remove-image').addEventListener('click', removeSelectedImage);
+        document.getElementById('send-button').addEventListener('click', sendMessage);
+        document.getElementById('message-input').addEventListener('keypress', (e) => e.key === 'Enter' && sendMessage());
 
-        fileInput.addEventListener('change', function (e) {
+        // Gestion du modal de passphrase
+        const passphraseModal = document.getElementById('passphrase-modal');
+        const passphraseInput = document.getElementById('passphrase-input');
+        const passphraseConfirm = document.getElementById('passphrase-confirm');
+        const passphraseSubmit = document.getElementById('passphrase-submit');
+        const passphraseCancel = document.getElementById('passphrase-cancel');
+        const passphraseTitle = document.getElementById('passphrase-title');
+        const passphraseHint = document.getElementById('passphrase-hint');
+        const passphraseError = document.getElementById('passphrase-error');
+
+        let currentPassphraseCallback = null;
+
+        function showPassphraseModal(title, hint, needsConfirmation, callback) {
+            passphraseTitle.textContent = title;
+            passphraseHint.textContent = hint;
+            passphraseConfirm.classList.toggle('hidden', !needsConfirmation);
+            passphraseInput.value = '';
+            passphraseConfirm.value = '';
+            passphraseError.classList.add('hidden');
+            currentPassphraseCallback = callback;
+            passphraseModal.classList.remove('hidden');
+            passphraseInput.focus();
+        }
+
+        function hidePassphraseModal() {
+            passphraseModal.classList.add('hidden');
+            currentPassphraseCallback = null;
+        }
+
+        passphraseSubmit.addEventListener('click', () => {
+            const passphrase = passphraseInput.value;
+            const confirm = passphraseConfirm.value;
+
+            if (passphrase.length < 8) {
+                passphraseError.textContent = "La passphrase doit contenir au moins 8 caractères";
+                passphraseError.classList.remove('hidden');
+                return;
+            }
+
+            if (!passphraseConfirm.classList.contains('hidden') && passphrase !== confirm) {
+                passphraseError.textContent = "Les passphrases ne correspondent pas";
+                passphraseError.classList.remove('hidden');
+                return;
+            }
+
+            if (currentPassphraseCallback) {
+                currentPassphraseCallback(passphrase);
+            }
+            hidePassphraseModal();
+        });
+
+        passphraseCancel.addEventListener('click', hidePassphraseModal);
+
+        function handleFileSelect(e) {
             const file = e.target.files[0];
             if (!file) return;
 
             currentFile = file;
-            filePreview.style.display = 'block';
+            const preview = document.getElementById('file-preview');
+            preview.style.display = 'block';
 
             if (file.type.startsWith('image/')) {
                 const reader = new FileReader();
-                reader.onload = function (e) {
-                    filePreview.innerHTML = `
-                        <img src="${e.target.result}" class="normal-image">
+                reader.onload = (e) => {
+                    preview.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <img src="${e.target.result}" class="w-16 h-16 object-cover rounded-lg">
+                            <div>
+                                <p class="font-medium">${file.name}</p>
+                                <p class="text-sm text-gray-500">${(file.size / 1024).toFixed(2)} KB</p>
+                            </div>
+                        </div>
                     `;
                 };
                 reader.readAsDataURL(file);
             } else {
-                filePreview.innerHTML = `
-                    <div>Prêt à envoyer: ${file.name}</div>
+                preview.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-file text-2xl text-gray-500"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium">${file.name}</p>
+                            <p class="text-sm text-gray-500">${(file.size / 1024).toFixed(2)} KB</p>
+                        </div>
+                    </div>
                 `;
             }
-        });
+        }
 
-        imageInput.addEventListener('change', function (e) {
+        function handleImageSelect(e) {
             const file = e.target.files[0];
             if (file && file.type.startsWith('image/')) {
                 currentImage = file;
-                imageLabel.classList.remove('required-image');
-                imageLabel.title = "Image sélectionnée: " + file.name;
-            } else {
-                currentImage = null;
-                imageLabel.classList.add('required-image');
-                imageLabel.title = "";
+                document.getElementById('image-preview-container').style.display = 'block';
+                document.getElementById('image-label').classList.remove('animate-pulse-border', 'border-red-400');
+                document.getElementById('image-label').classList.add('border-green-400');
+                document.getElementById('send-button').disabled = false;
             }
-        });
+        }
 
-        document.getElementById('send-button').addEventListener('click', sendMessage);
-        document.getElementById('message-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') sendMessage();
-        });
+        function removeSelectedImage() {
+            currentImage = null;
+            document.getElementById('image-input').value = '';
+            document.getElementById('image-preview-container').style.display = 'none';
+            document.getElementById('image-label').classList.add('animate-pulse-border', 'border-red-400');
+            document.getElementById('image-label').classList.remove('border-green-400');
+            document.getElementById('send-button').disabled = true;
+        }
 
         function sendMessage() {
-            // Vérifier qu'une image a été sélectionnée
             if (!currentImage) {
-                alert("Vous devez sélectionner une image (icône 🖼️) pour cacher votre message !");
-                imageLabel.classList.add('required-image');
-                imageLabel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                alert("Vous devez sélectionner une image pour cacher votre message !");
                 return;
             }
 
             const input = document.getElementById('message-input');
 
-            if (currentFile) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    const fileData = e.target.result.split(',')[1];
-                    const passphrase = prompt("Entrez une passphrase pour ce fichier:");
-                    if (!passphrase) return;
-
-                    // Utiliser l'image sélectionnée
+            showPassphraseModal(
+                currentFile ? "Passphrase pour le fichier" : "Passphrase pour le message",
+                "(minimum 8 caractères - à conserver précieusement)",
+                true,
+                (passphrase) => {
                     const imgReader = new FileReader();
-                    imgReader.onload = function (imgEvent) {
-                        const imageData = imgEvent.target.result.split(',')[1];
-                        socket.emit('send_message', {
-                            is_file: true,
-                            file_data: fileData,
-                            filename: currentFile.name,
-                            filetype: currentFile.type,
-                            sender: myID,
-                            passphrase: passphrase,
-                            cover_image: imageData
-                        });
-                        showSentConfirmation();
-                        resetForm();
+                    imgReader.onload = function (e) {
+                        const imageData = e.target.result.split(',')[1];
+
+                        if (currentFile) {
+                            const fileReader = new FileReader();
+                            fileReader.onload = function (e) {
+                                const fileData = e.target.result.split(',')[1];
+                                socket.emit('send_message', {
+                                    is_file: true,
+                                    file_data: fileData,
+                                    filename: currentFile.name,
+                                    filetype: currentFile.type,
+                                    passphrase: passphrase,
+                                    cover_image: imageData
+                                });
+                                resetForm();
+                            };
+                            fileReader.readAsDataURL(currentFile);
+                        } else {
+                            const message = input.value.trim();
+                            if (!message) {
+                                alert("Veuillez entrer un message !");
+                                return;
+                            }
+
+                            socket.emit('send_message', {
+                                message: message,
+                                passphrase: passphrase,
+                                cover_image: imageData
+                            });
+                            resetForm();
+                        }
                     };
                     imgReader.readAsDataURL(currentImage);
-                };
-                reader.readAsDataURL(currentFile);
-            } else {
-                const message = input.value.trim();
-                if (!message) {
-                    alert("Veuillez entrer un message !");
-                    return;
                 }
-
-                const passphrase = prompt("Entrez une passphrase pour ce message:");
-                if (!passphrase) return;
-
-                // Utiliser l'image sélectionnée
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    const imageData = e.target.result.split(',')[1];
-                    socket.emit('send_message', {
-                        message: message,
-                        sender: myID,
-                        passphrase: passphrase,
-                        cover_image: imageData
-                    });
-                    showSentConfirmation();
-                    resetForm();
-                };
-                reader.readAsDataURL(currentImage);
-            }
+            );
         }
 
         function resetForm() {
             document.getElementById('message-input').value = '';
             currentFile = null;
             currentImage = null;
-            fileInput.value = '';
-            imageInput.value = '';
-            filePreview.style.display = 'none';
-            filePreview.innerHTML = '';
-            imageLabel.classList.add('required-image');
-            imageLabel.title = "";
+            document.getElementById('file-input').value = '';
+            document.getElementById('image-input').value = '';
+            document.getElementById('file-preview').style.display = 'none';
+            document.getElementById('file-preview').innerHTML = '';
+            document.getElementById('image-preview-container').style.display = 'none';
+            document.getElementById('image-label').classList.add('animate-pulse-border', 'border-red-400');
+            document.getElementById('image-label').classList.remove('border-green-400');
+            document.getElementById('send-button').disabled = true;
         }
 
-        function showSentConfirmation() {
-            const div = document.createElement('div');
-            div.className = 'message sent';
-            div.innerHTML = `
-                <div>Message envoyé</div>
-                <div class="confirmation">✓</div>
-                <div class="message-time">${new Date().toLocaleTimeString()}</div>
-            `;
-            messagesDiv.appendChild(div);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
+        // Gestion des messages reçus
         socket.on('receive_message', function (data) {
-            if (data.sender === myID) return;
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
 
-            const div = document.createElement('div');
-            div.className = 'message received';
+            messageDiv.className = `p-3 rounded-lg max-w-xs ${data.sender === sessionStorage.getItem('userAlias') ?
+                'bg-indigo-100 ml-auto' : 'bg-gray-200 mr-auto'}`;
 
-            if (data.is_file) {
-                div.innerHTML = `
-                    <img src="data:image/png;base64,${data.image}" class="normal-image">
-                    <div class="message-time">${new Date(data.timestamp).toLocaleTimeString()}</div>
-                `;
+            messageDiv.innerHTML = `
+                <img src="data:image/png;base64,${data.image}" class="w-full rounded-lg cursor-pointer">
+                <div class="text-xs text-gray-500 mt-1">
+                    ${new Date(data.timestamp).toLocaleTimeString()}
+                </div>
+            `;
 
-                div.querySelector('img').onclick = function () {
-                    decryptAndDownloadFile(data.image, data.message_id, data.filename, data.filetype, div);
-                };
-            } else {
-                div.innerHTML = `
-                    <img src="data:image/png;base64,${data.image}" class="normal-image">
-                    <div class="message-time">${new Date(data.timestamp).toLocaleTimeString()}</div>
-                `;
+            messageDiv.querySelector('img').onclick = function () {
+                if (data.is_file) {
+                    decryptAndDownloadFile(data.image, data.message_id);
+                } else {
+                    decryptMessage(data.image, data.message_id, messageDiv);
+                }
+            };
 
-                div.querySelector('img').onclick = function () {
-                    decryptMessage(data.image, data.message_id, div);
-                };
-            }
-
-            messagesDiv.appendChild(div);
+            messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         });
 
+        // Handle message sent confirmation
         socket.on('message_sent', function (data) {
-            // Cette fonction peut être utilisée pour des confirmations supplémentaires
+            // Show a temporary notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white p-3 rounded-lg shadow-lg notification-fade';
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span>Message envoyé</span>
+                </div>
+            `;
+            document.body.appendChild(notification);
+
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 500);
+            }, 3000);
+
+            // Display the message in our chat
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+
+            messageDiv.className = 'p-3 rounded-lg max-w-xs bg-indigo-100 ml-auto';
+
+            // Always show as image
+            messageDiv.innerHTML = `
+                <img src="data:image/png;base64,${data.image}" class="w-full rounded-lg cursor-pointer">
+                <div class="text-xs text-gray-500 mt-1">
+                    ${new Date(data.timestamp).toLocaleTimeString()} - Envoyé
+                </div>
+            `;
+
+            // Add click handler for decryption
+            messageDiv.querySelector('img').onclick = function () {
+                if (data.is_file) {
+                    decryptAndDownloadFile(data.image, data.message_id);
+                } else {
+                    decryptMessage(data.image, data.message_id, messageDiv);
+                }
+            };
+
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+
+        // Handle errors more gracefully
+        socket.on('error', function (data) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-red-500 text-white p-3 rounded-lg shadow-lg notification-fade';
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    <span>${data.message}</span>
+                </div>
+            `;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 500);
+            }, 5000);
         });
 
         function decryptMessage(imageData, messageId, parentDiv) {
-            const passphrase = prompt("Entrez la passphrase secrète:");
-            if (!passphrase) return;
+            if (decryptAttempts[messageId] >= MAX_ATTEMPTS) {
+                alert("Trop de tentatives échouées. Veuillez réessayer plus tard.");
+                return;
+            }
 
-            fetch('/decrypt', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    image: "data:image/png;base64," + imageData,
-                    message_id: messageId,
-                    passphrase: passphrase
-                })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        const contentDiv = document.createElement('div');
-                        contentDiv.style.marginTop = '8px';
-                        contentDiv.textContent = data.message;
-                        parentDiv.appendChild(contentDiv);
-                    } else {
-                        alert("Erreur: " + data.message);
-                    }
-                })
-                .catch(error => {
-                    alert("Erreur de déchiffrement");
-                    console.error(error);
-                });
+            showPassphraseModal(
+                "Passphrase requise",
+                "Entrez la passphrase pour décrypter le message",
+                false,
+                (passphrase) => {
+                    fetch('/decrypt', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            image: "data:image/png;base64," + imageData,
+                            passphrase: passphrase,
+                            message_id: messageId
+                        })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                decryptAttempts[messageId] = 0;
+                                const contentDiv = document.createElement('div');
+                                contentDiv.className = 'mt-2 p-2 bg-white rounded-lg';
+                                contentDiv.textContent = data.message;
+                                parentDiv.appendChild(contentDiv);
+                            } else {
+                                decryptAttempts[messageId] = (decryptAttempts[messageId] || 0) + 1;
+                                const remaining = MAX_ATTEMPTS - decryptAttempts[messageId];
+                                alert(`Passphrase incorrecte. ${remaining > 0 ? `${remaining} tentatives restantes` : 'Plus de tentatives autorisées'}`);
+                            }
+                        })
+                        .catch(error => {
+                            console.error(error);
+                            alert("Erreur de déchiffrement");
+                        });
+                }
+            );
         }
 
-        function decryptAndDownloadFile(imageData, messageId, filename, filetype, parentDiv) {
-            const passphrase = prompt(`Entrez la passphrase pour ${filename}:`);
-            if (!passphrase) return;
+        function decryptAndDownloadFile(imageData, messageId) {
+            if (decryptAttempts[messageId] >= MAX_ATTEMPTS) {
+                alert("Trop de tentatives échouées. Veuillez réessayer plus tard.");
+                return;
+            }
 
-            fetch('/decrypt', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    image: "data:image/png;base64," + imageData,
-                    message_id: messageId,
-                    passphrase: passphrase,
-                    is_file: true,
-                    filename: filename,
-                    filetype: filetype
-                })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        const link = document.createElement('a');
-                        link.href = `data:${data.filetype};base64,${data.file_data}`;
-                        link.download = data.filename;
-                        link.click();
-                    } else {
-                        alert("Erreur: " + data.message);
-                    }
-                })
-                .catch(error => {
-                    alert("Erreur de déchiffrement");
-                    console.error(error);
-                });
+            showPassphraseModal(
+                "Passphrase requise",
+                "Entrez la passphrase pour décrypter le fichier",
+                false,
+                (passphrase) => {
+                    fetch('/decrypt', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            image: "data:image/png;base64," + imageData,
+                            passphrase: passphrase,
+                            is_file: true,
+                            message_id: messageId
+                        })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                decryptAttempts[messageId] = 0;
+
+                                // Utiliser le nom de fichier et le type reçus du serveur
+                                const link = document.createElement('a');
+                                link.href = `data:${data.filetype};base64,${data.file_data}`;
+                                link.download = data.filename;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                            } else {
+                                decryptAttempts[messageId] = (decryptAttempts[messageId] || 0) + 1;
+                                const remaining = MAX_ATTEMPTS - decryptAttempts[messageId];
+                                alert(`Passphrase incorrecte. ${remaining > 0 ? `${remaining} tentatives restantes` : 'Plus de tentatives autorisées'}`);
+                            }
+                        })
+                        .catch(error => {
+                            console.error(error);
+                            alert("Erreur de déchiffrement");
+                        });
+                }
+            );
         }
+
+        // Initialisation
+        if (!sessionStorage.getItem('userAlias')) {
+            const randomAlias = `User-${Math.random().toString(36).substr(2, 4)}`;
+            sessionStorage.setItem('userAlias', randomAlias);
+        }
+        document.getElementById('user-alias').textContent = sessionStorage.getItem('userAlias');
     </script>
 </body>
 
